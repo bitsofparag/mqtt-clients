@@ -17,6 +17,8 @@ MQTT Clients in Python, Javascript
 
 2. `python -m mqtt_clients.main`
 
+Run `make` for more commands.
+
 # Build Status
 ------------
 
