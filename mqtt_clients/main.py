@@ -43,7 +43,7 @@ def main(*args, **kwargs):
 
     :some_arg type: describe the argument `some_arg`
     """
-    logger.debug('Hello world!')
+    logger.debug("Starting client...")
     run_client()
 
 

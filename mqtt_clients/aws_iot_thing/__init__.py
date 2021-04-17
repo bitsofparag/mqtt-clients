@@ -66,7 +66,7 @@ parser.add_argument(
     "--thing_name",
     action="store",
     dest="thing_name",
-    default="broker_0",
+    default="test_broker_001",
     help="Targeted thing name", )
 parser.add_argument(
     "-t",
@@ -85,7 +85,7 @@ parser.add_argument(
 
 args = parser.parse_args()
 if not args.message_format:
-    parser.error("Please specify message format, -f json|protobuf|collectd")
+    parser.error("Please specify message format, -f json|protobuf")
     exit(2)
 
 if not args.certificate_path or not args.private_key_path:
@@ -114,24 +114,18 @@ certificate_path = args.certificate_path
 private_key_path = args.private_key_path
 client_id = args.thing_name
 thing_name = args.thing_name
-pub_topic = args.topic or (
-    "my_project/things/"
-    + message_format
-    + "/publish/testing/")
-subs_topic = "solg/things/subscribe/"
-
+pub_topic = args.topic or (f"test_broker/{message_format}/publish/testing")
+subs_topic = "test_broker/subscribe/"
 interval = int(args.interval)
-
-log.info("--- Input parameters --- ")
-log.info("AWS IoT endpoint : {}:{}".format(host, port))
-log.info("AWS IoT Thing    : {}".format(thing_name))
-log.info("AWS Topic        : {}".format(pub_topic))
-log.info("Private cert     : {}".format(private_key_path))
-log.info("Private key      : {}".format(certificate_path))
-log.info("------------------------ ")
+mock_device_buffer: list = []
 
 
-def ssl_alpn(ca, cert, private):
+class InvalidMessageFormat(Exception):
+    """Raise when message format is invalid or unimplemented"""
+    pass
+
+
+def __ssl_alpn(ca, cert, private):
     """Return ssl context that will be used by the mqtt client."""
     try:
         # debug print opnessl version
@@ -147,62 +141,87 @@ def ssl_alpn(ca, cert, private):
         raise e
 
 
-def on_connect(client, userdata, flags, rc):
+def __on_connect(client, userdata, flags, rc):
     """Subscribe when the client receives a CONNACK response from the server."""
     log.info("Connected with result code %s" % str(rc))
 
     # Subscribing in on_connect() means that if we lose the connection and
     # reconnect then subscriptions will be renewed.
     client.subscribe(subs_topic, 0, None)
+    client.publish(pub_topic, mock_device_buffer, 0)
 
 
 # The callback for when a PUBLISH message is received from the server.
-def on_message(client, userdata, msg):
+def __on_message(client, userdata, msg):
     """Print message when received from the mqtt server."""
     log.info(
         "Received message on topic %s: %s\n" %
         (msg.topic, str(msg.payload)))
 
 
+def __on_log(self, client, userdata, level, buf):
+    log.debug(f"{client}, {userdata}, {level}, {buf}")
+
+
+def run_mock_device():
+    """Simulates a fake device that generates telemetry data."""
+    loop_counter = 0
+    while True:  # publish loop
+        payload = None
+        if message_format == "json":
+            payload = mock_data.get_json_event(loop_counter)
+        if message_format == "protobuf":
+            log.info("Not implemented. Stopping device...")
+            raise InvalidMessageFormat
+        mock_device_buffer.append(payload)
+        log.info(f"buffer size: {len(mock_device_buffer)}")
+        time.sleep(interval)
+        loop_counter += 1
+
+
 def run_client():
+    log.info("--- Input parameters --- ")
+    log.info("AWS IoT endpoint : {}:{}".format(host, port))
+    log.info("AWS IoT Thing    : {}".format(thing_name))
+    log.info("AWS Topic        : {}".format(pub_topic))
+    log.info("Private key     : {}".format(private_key_path))
+    log.info("Private cert      : {}".format(certificate_path))
+    log.info("------------------------ ")
+
     # Set up the mqtt client
-    client = mqtt.Client()
-    ssl_context = ssl_alpn(root_ca_path, certificate_path, private_key_path)
-    client.tls_set_context(context=ssl_context)
-    client.on_connect = on_connect
-    client.on_message = on_message
+    client = mqtt.Client(client_id=client_id)
+    ssl_context = __ssl_alpn(root_ca_path, certificate_path, private_key_path)
+    #client.tls_set_context(context=ssl_context)
+    client.tls_set(root_ca_path, certfile=certificate_path, keyfile=private_key_path, cert_reqs=ssl.CERT_REQUIRED, tls_version=ssl.PROTOCOL_TLSv1_2, ciphers=None)
+    client.on_connect = __on_connect
+    client.on_message = __on_message
+    #client.on_log = __on_log
     client.enable_logger(logger=log)
 
     # Start connection loop
     try:
         log.info("Trying to connect to %s" % (host))
-        client.connect(host, port=port)
+        conn_res = client.connect(host, port=port, keepalive=120)
         client.loop_start()
-    except BaseException as e:
-        log.info("Error in connect!")
-        log.info("Type: %s" % str(type(e)))
+        while True:
+            client.publish(
+                topic=pub_topic,
+                payload="hello"
+            )
+            time.sleep(2)
+        #run_mock_device()
+    except InvalidMessageFormat as e:
+        log.error(f"Message format {message_format} is not valid or unimplemented.")
+        client.loop_stop()
+        time.sleep(2)
+        exit(0)
+    except KeyboardInterrupt:
+        log.info(f"Closing client...")
+        client.loop_stop()
+        time.sleep(2)
+        exit(0)
+    except Exception as e:
+        log.error("Type: %s" % str(type(e)))
+        client.loop_stop()
+        time.sleep(2)
         exit(2)
-
-    time.sleep(3)
-
-    loop_counter = 0
-    while True:  # publish loop
-        try:
-            payload = None
-            if message_format == "json":
-                payload = mock_data.get_json_event(loop_counter)
-            if message_format == "protobuf":
-                payload = mock_data.get_json_event(loop_counter)
-            if message_format == "collectd":
-                log.info("No fake data for collectd. Sending nothing.")
-                exit(2)
-
-            log.info("Publishing to {}: {}".format(pub_topic, payload))
-            client.publish(pub_topic, payload, 0)
-            time.sleep(interval)
-            loop_counter += 1
-        except Exception as e:  # catch all exceptions
-            log.error("Exception in publish")
-            raise e
-
-    client.loop_stop()
