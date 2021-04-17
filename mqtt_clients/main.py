@@ -2,7 +2,7 @@
 MQTT Clients.
 ~~~~~~~~~~~~~~~~~~~~~
 
-MQTT Clients in Python, Javascript
+MQTT Clients in Python
 
 Basic usage:
     >>> import mqtt_clients
@@ -16,6 +16,8 @@ import sys
 from os import path
 
 from decouple import config
+
+from mqtt_clients.aws_iot_thing import run_client
 
 SETTINGS = dict()
 SENTRY_DSN = config('SENTRY_DSN', default=False)
@@ -42,12 +44,7 @@ def main(*args, **kwargs):
     :some_arg type: describe the argument `some_arg`
     """
     logger.debug('Hello world!')
-    logger.debug('This is MQTT Clients.')
-    logger.debug('You should customize this file or delete it.')
-    logger.debug('--------------------------------------------')
-
-    logger.debug('Please configure your own logger with logging.config,')
-    logger.debug('for e.g, read logging config from "config/logging.json" file.')
+    run_client()
 
 
 if __name__ == '__main__':

@@ -3,18 +3,15 @@
 # Test script for IoT Thing
 # Copyright: © 2021, Parag M.
 # See /LICENSE for licensing information.
-import logging
 import argparse
+import logging
 import os
+import ssl
 import time
 from os import path
-import sys
-from os.path import dirname
-
-sys.path.append(f'{dirname(__file__)}/shared')
 
 import paho.mqtt.client as mqtt
-import ssl
+
 from mqtt_clients.shared import mock_data
 
 here = path.abspath(path.dirname(__file__))
