@@ -15,12 +15,14 @@ include .env.$(ENVIRONMENT)
 export
 endif
 
+
 define BROWSER_PYSCRIPT
 import os, webbrowser, sys
 from urllib.request import pathname2url
 webbrowser.get('firefox').open_new_tab("file://" + pathname2url(os.path.abspath(sys.argv[1])))
 endef
 export BROWSER_PYSCRIPT
+
 
 define PRINT_HELP_PYSCRIPT
 import re, sys
@@ -39,6 +41,7 @@ PYTHON_VERSION ?= 3.8.6
 PAYLOAD_NAME := payload-$(PACKAGE_VERSION).zip
 TMP_VENV := tmp-venv
 PROJECT_ROOT := $(PWD)
+DEPLOY_ROOT := $(PWD)/deploy
 
 help:
 	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
@@ -107,6 +110,3 @@ else
 	@ls -l dist
 endif
 	@rm -rf $(TMP_VENV)
-
-# https://github.com/horejsek/python-webapp-example/blob/master/Makefile
-# https://github.com/audreyr/cookiecutter-pypackage/blob/master/%7B%7Bcookiecutter.project_slug%7D%7D/Makefile
