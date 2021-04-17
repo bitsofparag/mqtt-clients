@@ -12,6 +12,7 @@ Basic usage:
 :license: MIT, see LICENSE for more details.
 """
 import logging
+import sys
 from os import path
 
 from decouple import config
@@ -19,8 +20,8 @@ from decouple import config
 SETTINGS = dict()
 SENTRY_DSN = config('SENTRY_DSN', default=False)
 here = path.abspath(path.dirname(__file__))
+logging.basicConfig(format='%(levelname)s - %(message)s', stream=sys.stdout, level=logging.DEBUG)
 logger = logging.getLogger('mqtt_clients')
-logger.setLevel(logging.DEBUG)
 
 # Sentry integration
 if (SENTRY_DSN):
