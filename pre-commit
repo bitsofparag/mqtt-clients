@@ -1,0 +1,13 @@
+#!/bin/bash
+
+set -e
+
+echo "==> Running isort..."
+make format
+echo "==> Running flake8..."
+make lint
+echo "==> Running tests..."
+make test
+
+
+# ln -s pre-commit .git/hooks/pre-commit

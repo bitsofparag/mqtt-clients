@@ -1,0 +1,31 @@
+======================
+MQTT Clients
+======================
+
+.. image:: https://upload.wikimedia.org/wikipedia/commons/a/a7/Blank_template.svg
+     :target: https://github.com/bitsofparag/mqtt_clients
+     :alt: Updates
+
+MQTT Clients in Python, Javascript
+
+* Git repo: https://github.com/bitsofparag/mqtt_clients
+* Documentation: https://github.com/bitsofparag/mqtt_clients/docs
+* Free software: MIT
+
+Features
+--------
+
+Setup and Usage
+---------------
+
+1. `pip install`
+
+2. `pip install -r requirements-dev.txt`
+
+
+Build Status
+------------
+
+
+Contributing Guidelines
+-----------------------

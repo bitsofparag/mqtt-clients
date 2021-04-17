@@ -1,0 +1,3 @@
+python-decouple
+paho-mqtt
+sentry-sdk>=0.14.3
