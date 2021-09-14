@@ -1,0 +1,30 @@
+* AWS IoT Thing
+
+This document contains information on how to work with [[https://aws.amazon.com/iot-core/][AWS IoT Core]] and its [[https://docs.aws.amazon.com/iot/latest/developerguide/iot-thing-management.html][Things]].
+
+** How to create Things
+
+TBA
+
+** How to use a Thing's certificates
+
+- Download the certificate for a Thing from IoT Core as shown in the pic below:
+
+   #+caption: Download certificate PEM file
+   #+attr_html: :width 800 :style border:2px solid #fefefe;display:inline;margin:10px;
+   #+label: fig:1
+   [[./download-cert-pem.png][download cert pem file]]
+
+
+- Run the simulator with the following command:
+
+#+BEGIN_SRC sh
+python -m mqtt_clients.main \
+    -f json \
+    -e abcdefgh12345.iot.region.amazonaws.com \
+    -n simulator \
+    -t 'topic/to/publish/' \
+    -w 10
+#+END_SRC
+
+/See the `__init__.py` of the chosen client for details of the above options./

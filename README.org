@@ -1,0 +1,26 @@
+* MQTT Clients
+
+MQTT Clients in Python, Javascript
+
+- Git repo: https://github.com/bitsofparag/mqtt_clients
+- Documentation: https://github.com/bitsofparag/mqtt_clients/docs
+
+* Features
+
+TBA
+
+* Setup
+
+1. =pip install -r requirements.txt -r requirements-dev.txt=
+
+2. Choose the MQTT server/service (e.g AWS IoT Core) that the client will talk to.
+
+* Run on AWS IoT Core
+
+See details [[./docs/aws-iot-thing][here]].
+
+* Build Status
+
+Unavailable
+
+* Contributing Guidelines
