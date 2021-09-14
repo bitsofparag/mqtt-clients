@@ -1,16 +1,3 @@
-### Python ###
-# local dev
-*.org
-!README.org
-.vscode/*
-.python-version
-.env*
-!.env.example
-
-### AWS IoT Thing
-*.cert
-*.key
-
 ### Terraform ###
 # Local .terraform directories
 **/.terraform/*
@@ -41,6 +28,8 @@ override.tf.json
 # Include tfplan files to ignore the plan output of command: terraform plan -out=tfplan
 # example: *tfplan*
 
+
+### Python ###
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -144,3 +133,19 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+
+### This project ###
+*.org
+!README.org
+.vscode/*
+.python-version
+.env*
+!.env.example
+
+*.cert
+!*.cert.example
+*.crt
+!*.crt.example
+*.key
+!*.key.example
