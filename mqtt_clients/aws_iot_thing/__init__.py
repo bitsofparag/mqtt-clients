@@ -4,18 +4,22 @@
 # Copyright: © 2021, Parag M.
 # See /LICENSE for licensing information.
 import argparse
+import click
+import json
 import logging
 import os
 import ssl
 import time
 from os import path
 
-import paho.mqtt.client as mqtt
+import AWSIoTPythonSDK.MQTTLib as AWSIoTPyMQTT
 
 from mqtt_clients.shared import mock_data
 
 here = path.abspath(path.dirname(__file__))
 log = logging.getLogger('mqtt_clients')
+
+# Click
 
 # Read in command-line parameters
 parser = argparse.ArgumentParser()
@@ -52,7 +56,7 @@ parser.add_argument(
     "--cert",
     action="store",
     dest="certificate_path",
-    default=path.join(here, "certs/thing.cert"),
+    default=path.join(here, "certs/thing.crt"),
     help="Certificate file path")
 parser.add_argument(
     "-k",
@@ -106,17 +110,17 @@ if not os.path.isfile(args.private_key_path):
     parser.error("No private key found at {}".format(args.private_key_path))
     exit(3)
 
-message_format = args.message_format
-host = args.host
-port = args.port
-root_ca_path = args.root_ca_path
-certificate_path = args.certificate_path
-private_key_path = args.private_key_path
-client_id = args.thing_name
-thing_name = args.thing_name
-pub_topic = args.topic or (f"test_broker/{message_format}/publish/testing")
-subs_topic = "test_broker/subscribe/"
-interval = int(args.interval)
+message_format: str = args.message_format
+host: str = args.host
+port: int = int(args.port)
+root_ca_path: str = args.root_ca_path
+certificate_path: str = args.certificate_path
+private_key_path: str = args.private_key_path
+client_id: str = args.thing_name
+thing_name: str = args.thing_name
+pub_topic: str = args.topic or (f"test_broker/{message_format}/publish/testing")
+subs_topic: str = "test_broker/subscribe/"
+interval: int = int(args.interval)
 mock_device_buffer: list = []
 
 
@@ -137,13 +141,13 @@ def __ssl_alpn(ca, cert, private):
 
         return ssl_context
     except Exception as e:
-        print("exception ssl_alpn()")
+        log.error(f"SSL Exception in ssl_alpn() : {e}")
         raise e
 
 
 def __on_connect(client, userdata, flags, rc):
     """Subscribe when the client receives a CONNACK response from the server."""
-    log.info("Connected with result code %s" % str(rc))
+    log.info(f"Connected with result code {str(rc)}")
 
     # Subscribing in on_connect() means that if we lose the connection and
     # reconnect then subscriptions will be renewed.
@@ -154,16 +158,14 @@ def __on_connect(client, userdata, flags, rc):
 # The callback for when a PUBLISH message is received from the server.
 def __on_message(client, userdata, msg):
     """Print message when received from the mqtt server."""
-    log.info(
-        "Received message on topic %s: %s\n" %
-        (msg.topic, str(msg.payload)))
+    log.info(f"Received message on topic {msg.topic}: {str(msg.payload)}\n")
 
 
 def __on_log(self, client, userdata, level, buf):
     log.debug(f"{client}, {userdata}, {level}, {buf}")
 
 
-def run_mock_device():
+def run_mock_device(device):
     """Simulates a fake device that generates telemetry data."""
     loop_counter = 0
     while True:  # publish loop
@@ -173,8 +175,10 @@ def run_mock_device():
         if message_format == "protobuf":
             log.info("Not implemented. Stopping device...")
             raise InvalidMessageFormat
-        mock_device_buffer.append(payload)
-        log.info(f"buffer size: {len(mock_device_buffer)}")
+        # TODO handle buffer cases later
+        #mock_device_buffer.append(payload)
+        device.publish(pub_topic, payload, 1)
+        log.info(f"Published {payload}")
         time.sleep(interval)
         loop_counter += 1
 
@@ -189,39 +193,35 @@ def run_client():
     log.info("------------------------ ")
 
     # Set up the mqtt client
-    client = mqtt.Client(client_id=client_id)
-    ssl_context = __ssl_alpn(root_ca_path, certificate_path, private_key_path)
-    #client.tls_set_context(context=ssl_context)
-    client.tls_set(root_ca_path, certfile=certificate_path, keyfile=private_key_path, cert_reqs=ssl.CERT_REQUIRED, tls_version=ssl.PROTOCOL_TLSv1_2, ciphers=None)
-    client.on_connect = __on_connect
-    client.on_message = __on_message
-    #client.on_log = __on_log
-    client.enable_logger(logger=log)
+    # Taken from - https://github.com/aws/aws-iot-device-sdk-python#awsiotmqttclient
+    client = AWSIoTPyMQTT.AWSIoTMQTTClient(thing_name)
+    # Disable metrics collection
+    AWSIoTPyMQTT.AWSIoTMQTTClient.disableMetricsCollection(client)
+    client.configureEndpoint(host, port)  # TLS auth
+    client.configureCredentials(root_ca_path, private_key_path, certificate_path)
+    client.configureOfflinePublishQueueing(-1)  # Infinite offline Publish queueing
+    client.configureDrainingFrequency(2)  # Draining: 2 Hz
+    client.configureConnectDisconnectTimeout(10)  # 10 sec
+    client.configureMQTTOperationTimeout(5)  # 5 sec
 
     # Start connection loop
     try:
-        log.info("Trying to connect to %s" % (host))
-        conn_res = client.connect(host, port=port, keepalive=120)
-        client.loop_start()
-        while True:
-            client.publish(
-                topic=pub_topic,
-                payload="hello"
-            )
-            time.sleep(2)
-        #run_mock_device()
+        log.info(f"Trying to connect to {host}")
+        client.connect()
+        run_mock_device(client)
     except InvalidMessageFormat as e:
         log.error(f"Message format {message_format} is not valid or unimplemented.")
-        client.loop_stop()
+        client.disconnect()
         time.sleep(2)
         exit(0)
     except KeyboardInterrupt:
         log.info(f"Closing client...")
-        client.loop_stop()
+        client.disconnect()
         time.sleep(2)
         exit(0)
     except Exception as e:
+        log.error(f"Exception: {e}")
         log.error("Type: %s" % str(type(e)))
-        client.loop_stop()
+        client.disconnect()
         time.sleep(2)
         exit(2)

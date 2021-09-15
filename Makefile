@@ -1,19 +1,7 @@
 .PHONY: build clean clean-test clean-pyc clean-build lint docs help
 .DEFAULT_GOAL := help
 SHELL=/bin/bash
-
-ENVIRONMENT ?=
-
-ifeq ($(ENVIRONMENT), )
-ENVIRONMENT := development
-include .env
-export
-endif
-
-ifeq ($(ENVIRONMENT), $(filter $(ENVIRONMENT), staging prod))
-include .env.$(ENVIRONMENT)
-export
-endif
+ENVIRONMENT := dev
 
 
 define BROWSER_PYSCRIPT
@@ -34,12 +22,9 @@ for line in sys.stdin:
 endef
 export PRINT_HELP_PYSCRIPT
 
-SRC=.  # Update with correct path of src files
+SRC=mqtt_clients  # Update with correct path of src files
 BROWSER := python -c "$$BROWSER_PYSCRIPT"
-PACKAGE_VERSION ?= 0.1-$(ENVIRONMENT)
-PYTHON_VERSION ?= 3.8.6
-PAYLOAD_NAME := payload-$(PACKAGE_VERSION).zip
-TMP_VENV := tmp-venv
+PYTHON_VERSION ?= 3.9.5
 PROJECT_ROOT := $(PWD)
 DEPLOY_ROOT := $(PWD)/deploy
 
@@ -81,32 +66,3 @@ docs: ## generate Sphinx HTML documentation
 	$(MAKE) -C docs clean
 	$(MAKE) -C docs html
 	$(BROWSER) docs/build/html/index.html
-
-_venv:
-	@python -m venv ./$(TMP_VENV)
-
-build-deps: requirements.txt
-ifeq ("$(wildcard setup.py)","")
-	@python -m venv ./$(TMP_VENV)
-	@echo "Compiling and packaging dependencies"
-	@bash -c "source $(TMP_VENV)/bin/activate \
-	&& pip install -r requirements.txt \
-	&& cd $(TMP_VENV)/lib/python$(PYTHON_VERSION)/site-packages/ \
-	&& zip -r9 $(PROJECT_ROOT)/dist/$(PAYLOAD_NAME) ."
-else
-	@python -m venv ./$(TMP_VENV)
-	@echo "Dependencies will be compiled in build task."
-endif
-
-build: clean build-deps ## builds src files for distribution
-ifeq ("$(wildcard setup.py)","")
-	bash -c "source $(TMP_VENV)/bin/activate \
-	&& python3 -m compileall $(SRC) -x $(TMP_VENV) \
-	&& zip -rg dist/$(PAYLOAD_NAME) handler.py config utils \
-	&& deactivate"
-else
-	@python setup.py sdist
-	@python setup.py bdist_wheel
-	@ls -l dist
-endif
-	@rm -rf $(TMP_VENV)

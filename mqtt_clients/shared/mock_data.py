@@ -37,7 +37,7 @@ def _generate_event(device_id=None):
     # formatted_time = datetime.fromtimestamp(timestamp).strftime("%Y-%m-%D %H:%M:%S")
     event['timestamp'] = timestamp
     event['device_id'] = device_id
-    event['customer_id'] = "acme-test"
+    event['customer_id'] = "simulator"
 
     return event
 

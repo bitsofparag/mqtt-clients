@@ -16,15 +16,21 @@ TBA
    [[./download-cert-pem.png]]
 
 
+- *Set thing.crt*. Copy the downloaded file (named something like =abcdefg-certificate.pem.crt=) to
+  =mqtt_clients/aws_iot_thing/certs= as =thing.crt=.
+
+- *Set thing.key*. Obtain the private key for the Thing from the deployment state file or the
+  secrets manager.
+
 - Run the simulator with the following command:
 
-#+BEGIN_SRC sh
-python -m mqtt_clients.main \
-    -f json \
-    -e abcdefgh12345.iot.region.amazonaws.com \
-    -n simulator \
-    -t 'topic/to/publish/' \
-    -w 10
-#+END_SRC
+  #+BEGIN_SRC sh
+  python -m mqtt_clients.main \
+      -f json \
+      -e abcdefgh12345.iot.region.amazonaws.com \
+      -n simulator \
+      -t 'topic/to/publish/' \
+      -w 10
+  #+END_SRC
 
 /See the `__init__.py` of the chosen client for details of the above options./
