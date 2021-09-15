@@ -22,15 +22,18 @@ TBA
 - *Set thing.key*. Obtain the private key for the Thing from the deployment state file or the
   secrets manager.
 
+- (Optional) Open =mqtt_clients/shared/mock_data.py= and update the =_generate_event_payload= method.
+  You can add or update keys with values, as per requirement.
+
 - Run the simulator with the following command:
 
   #+BEGIN_SRC sh
   python -m mqtt_clients.main \
       -f json \
-      -e abcdefgh12345.iot.region.amazonaws.com \
+      -e abcdefgh12345.iot.your-region.amazonaws.com \
       -n simulator \
       -t 'topic/to/publish/' \
       -w 10
   #+END_SRC
 
-/See the `__init__.py` of the chosen client for details of the above options./
+/See the `__init__.py` of the chosen client for more info about the above options./

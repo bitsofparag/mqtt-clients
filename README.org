@@ -13,14 +13,12 @@ TBA
 
 1. =pip install -r requirements.txt -r requirements-dev.txt=
 
-2. Choose the MQTT server/service (e.g AWS IoT Core) that the client will talk to.
+2. See relevant "Run ..." sections below
 
 * Run on AWS IoT Core
 
 See details [[./docs/aws-iot-thing][here]].
 
-* Build Status
-
-Unavailable
-
 * Contributing Guidelines
+
+TBA
